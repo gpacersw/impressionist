@@ -49,6 +49,19 @@ module ImpressionistController
 
     protected
 
+    def set_ip
+      forw = request.env['HTTP_X_FORWARDED_FOR']
+
+      ## for systems behind a load balancer
+      if forw.nil?
+        return request.remote_ip
+      else
+        s = forw
+        ## somtimes this is a list "127.0.0.1, 192.10.6.3" - we want the first one
+        return s.split(',')[0]
+      end
+    end
+
     # creates a statment hash that contains default values for creating an impression via an AR relation.
     def associative_create_statement(query_params={})
       filter = ActionDispatch::Http::ParameterFilter.new(Rails.application.config.filter_parameters)
@@ -58,7 +71,7 @@ module ImpressionistController
         :user_id => user_id,
         :request_hash => @impressionist_hash,
         :session_hash => session_hash,
-        :ip_address => request.remote_ip,
+        :ip_address => set_ip,
         :referrer => request.referer,
         :params => filter.filter(params_hash)
         )
